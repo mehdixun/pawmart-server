@@ -9,7 +9,6 @@ const port = process.env.PORT || 3000;
 app.use(cors());
 app.use(express.json());
 
-// ===== MongoDB Connection =====
 const uri =
   "mongodb+srv://pawmart:FKZ87d9QnbJF6nix@cluster0.dy2dskh.mongodb.net/?retryWrites=true&w=majority";
 const client = new MongoClient(uri, {
@@ -20,7 +19,6 @@ const client = new MongoClient(uri, {
   },
 });
 
-// ===== Collections =====
 let productsCollection;
 let ordersCollection;
 
@@ -30,19 +28,17 @@ async function connectDB() {
     const db = client.db("pawmart");
     productsCollection = db.collection("products");
     ordersCollection = db.collection("orders");
-    console.log("✅ MongoDB connected successfully!");
+    console.log("MongoDB connected successfully!");
   } catch (err) {
-    console.error("❌ MongoDB connection failed:", err);
+    console.error("MongoDB connection failed:", err);
   }
 }
 connectDB();
 
-// ===== Root =====
 app.get("/", (req, res) => {
   res.send("🐾 Pawmart server is running perfectly!");
 });
 
-// ===== Add Product =====
 app.post("/products", async (req, res) => {
   try {
     const productData = req.body;
@@ -52,12 +48,12 @@ app.post("/products", async (req, res) => {
     const result = await productsCollection.insertOne(productData);
     res.send(result);
   } catch (error) {
-    console.error("❌ Add product error:", error);
+    console.error("Add product error:", error);
     res.status(500).send({ error: "Failed to add product" });
   }
 });
 
-// ===== Get All Products =====
+// Get All Products
 app.get("/products", async (req, res) => {
   try {
     const { email, category } = req.query;
@@ -80,12 +76,12 @@ app.get("/products", async (req, res) => {
 
     res.send(products);
   } catch (error) {
-    console.error("❌ Fetch products error:", error);
+    console.error("Fetch products error:", error);
     res.status(500).send({ error: "Failed to fetch products" });
   }
 });
 
-// ===== Get Recent Products =====
+//Get Recent Products
 app.get("/products/recent", async (req, res) => {
   try {
     const products = await productsCollection
@@ -100,7 +96,7 @@ app.get("/products/recent", async (req, res) => {
   }
 });
 
-// ===== Get Product by ID =====
+// Get Product by ID
 app.get("/products/:id", async (req, res) => {
   try {
     const id = req.params.id;
@@ -113,12 +109,11 @@ app.get("/products/:id", async (req, res) => {
 
     res.send(product);
   } catch (error) {
-    console.error("❌ Fetch product by ID error:", error);
+    console.error("Fetch product by ID error:", error);
     res.status(500).send({ error: "Failed to fetch product" });
   }
 });
 
-// ===== Delete Product =====
 app.delete("/products/:id", async (req, res) => {
   try {
     const { id } = req.params;
@@ -127,12 +122,11 @@ app.delete("/products/:id", async (req, res) => {
     });
     res.send(result);
   } catch (error) {
-    console.error("❌ Delete product error:", error);
+    console.error("Delete product error:", error);
     res.status(500).send({ error: "Failed to delete product" });
   }
 });
 
-// ===== Update Product =====
 app.put("/products/:id", async (req, res) => {
   try {
     const { id } = req.params;
@@ -143,12 +137,11 @@ app.put("/products/:id", async (req, res) => {
     );
     res.send(result);
   } catch (error) {
-    console.error("❌ Update product error:", error);
+    console.error("Update product error:", error);
     res.status(500).send({ error: "Failed to update product" });
   }
 });
 
-// ===== Place Order =====
 app.post("/orders", async (req, res) => {
   try {
     const orderData = req.body;
@@ -159,12 +152,11 @@ app.post("/orders", async (req, res) => {
     const result = await ordersCollection.insertOne(orderData);
     res.send(result);
   } catch (error) {
-    console.error("❌ Add order error:", error);
+    console.error("Add order error:", error);
     res.status(500).send({ error: "Failed to place order" });
   }
 });
 
-// ===== Get Orders by Email =====
 app.get("/orders", async (req, res) => {
   try {
     const { email } = req.query;
@@ -177,12 +169,12 @@ app.get("/orders", async (req, res) => {
       .toArray();
     res.send(orders);
   } catch (error) {
-    console.error("❌ Fetch orders error:", error);
+    console.error("Fetch orders error:", error);
     res.status(500).send({ error: "Failed to fetch orders" });
   }
 });
 
-// ===== 🧾 Generate Report Data (for frontend PDF export) =====
+// PDF File
 app.get("/orders/report", async (req, res) => {
   try {
     const { email } = req.query;
@@ -199,12 +191,11 @@ app.get("/orders/report", async (req, res) => {
       orders: userOrders,
     });
   } catch (error) {
-    console.error("❌ Report fetch error:", error);
+    console.error("Report fetch error:", error);
     res.status(500).send({ error: "Failed to generate report" });
   }
 });
 
-// ===== Start Server =====
 app.listen(port, () => {
-  console.log(`🚀 Pawmart server running on port ${port}`);
+  console.log(`Pawmart server running on port ${port}`);
 });
