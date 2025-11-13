@@ -1,6 +1,6 @@
-const express = require('express');
-const cors = require('cors');
-const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
+const express = require("express");
+const cors = require("cors");
+const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -9,9 +9,9 @@ const port = process.env.PORT || 3000;
 app.use(cors());
 app.use(express.json());
 
-// ====== MongoDB Connection URI ======
-const uri = "mongodb+srv://pawmart:FKZ87d9QnbJF6nix@cluster0.dy2dskh.mongodb.net/?appName=Cluster0";
-
+// ====== MongoDB Connection ======
+const uri =
+  "mongodb+srv://pawmart:FKZ87d9QnbJF6nix@cluster0.dy2dskh.mongodb.net/?appName=Cluster0";
 const client = new MongoClient(uri, {
   serverApi: {
     version: ServerApiVersion.v1,
@@ -20,7 +20,6 @@ const client = new MongoClient(uri, {
   },
 });
 
-// ====== Database Connection & Routes ======
 async function run() {
   try {
     await client.connect();
@@ -30,58 +29,58 @@ async function run() {
     const productsCollection = db.collection("products");
     const ordersCollection = db.collection("orders");
 
-    // ====== Root Route ======
+    // ====== Root ======
     app.get("/", (req, res) => {
       res.send("🐾 Pawmart server is running perfectly!");
     });
 
-    // ====== Add Listing ======
+    // ====== Add Product ======
     app.post("/products", async (req, res) => {
       try {
-        const { name, category, price, location, description, image, date, email } = req.body;
+        const productData = req.body;
+        productData.price = productData.price || 0;
+        productData.createdAt = new Date();
 
-        // Validation check
-        if (!name || !category || !location || !description || !image || !date || !email) {
-          return res.status(400).send({ error: "All fields are required" });
-        }
-
-        const newProduct = {
-          name,
-          category,
-          price: category === "Pets" ? 0 : Number(price) || 0,
-          location,
-          description,
-          image,
-          date,
-          email,
-          createdAt: new Date(),
-        };
-
-        const result = await productsCollection.insertOne(newProduct);
+        const result = await productsCollection.insertOne(productData);
         res.send(result);
       } catch (error) {
-        console.error("❌ Error adding product:", error);
+        console.error("❌ Add product error:", error);
         res.status(500).send({ error: "Failed to add product" });
       }
     });
 
-    // ====== Get All Products ======
+    // ====== Get Products with Category Mapping ======
     app.get("/products", async (req, res) => {
       try {
-        const products = await productsCollection.find().sort({ _id: -1 }).toArray();
+        const { email, category } = req.query;
+        let query = {};
+        if (email) query.email = email;
+
+        if (category) {
+          if (category === "Pets") {
+            query.category = { $in: ["Dog", "Cat", "Bird"] };
+          } else {
+            query.category = category;
+          }
+        }
+
+        const products = await productsCollection
+          .find(query)
+          .sort({ createdAt: -1 })
+          .toArray();
         res.send(products);
       } catch (error) {
-        console.error("❌ Fetch all products error:", error);
+        console.error("❌ Fetch products error:", error);
         res.status(500).send({ error: "Failed to fetch products" });
       }
     });
 
-    // ====== Get Recent 6 Products ======
+    // ====== Recent Products ======
     app.get("/products/recent", async (req, res) => {
       try {
         const products = await productsCollection
           .find()
-          .sort({ _id: -1 })
+          .sort({ createdAt: -1 })
           .limit(6)
           .toArray();
         res.send(products);
@@ -91,12 +90,15 @@ async function run() {
       }
     });
 
-    // ====== Get Single Product by ID ======
+    // ====== Get Product by ID ======
     app.get("/products/:id", async (req, res) => {
       try {
         const id = req.params.id;
-        const product = await productsCollection.findOne({ _id: new ObjectId(id) });
-        if (!product) return res.status(404).send({ error: "Product not found" });
+        const product = await productsCollection.findOne({
+          _id: new ObjectId(id),
+        });
+        if (!product)
+          return res.status(404).send({ error: "Product not found" });
         res.send(product);
       } catch (error) {
         console.error("❌ Fetch product by ID error:", error);
@@ -104,44 +106,62 @@ async function run() {
       }
     });
 
-    // ====== Create Order ======
-    app.post("/orders", async (req, res) => {
+    // ====== Delete Product ======
+    app.delete("/products/:id", async (req, res) => {
       try {
-        const { name, email, productId, productName, quantity, price, address, date, phone } = req.body;
-
-        if (!name || !email || !productId || !productName || !price || !address || !date || !phone) {
-          return res.status(400).send({ error: "All order fields are required" });
-        }
-
-        const newOrder = {
-          name,
-          email,
-          productId,
-          productName,
-          quantity: Number(quantity) || 1,
-          price: Number(price),
-          address,
-          date,
-          phone,
-          createdAt: new Date(),
-        };
-
-        const result = await ordersCollection.insertOne(newOrder);
+        const { id } = req.params;
+        const result = await productsCollection.deleteOne({
+          _id: new ObjectId(id),
+        });
         res.send(result);
       } catch (error) {
-        console.error("❌ Error adding order:", error);
+        console.error("❌ Delete product error:", error);
+        res.status(500).send({ error: "Failed to delete product" });
+      }
+    });
+
+    // ====== Place Order ======
+    app.post("/orders", async (req, res) => {
+      try {
+        const orderData = req.body;
+        orderData.quantity = Number(orderData.quantity) || 1;
+        orderData.price = Number(orderData.price) || 0;
+        orderData.createdAt = new Date();
+
+        const result = await ordersCollection.insertOne(orderData);
+        res.send(result);
+      } catch (error) {
+        console.error("❌ Add order error:", error);
         res.status(500).send({ error: "Failed to place order" });
       }
     });
 
+    // ====== 🧾 Get Orders by Email (important for My Orders page) ====
+    app.get("/orders", async (req, res) => {
+      try {
+        const email = req.query.email;
+        let query = {};
+        if (email) query.email = email;
+
+        const orders = await ordersCollection
+          .find(query)
+          .sort({ createdAt: -1 })
+          .toArray();
+        res.send(orders);
+      } catch (error) {
+        console.error("❌ Fetch orders error:", error);
+        res.status(500).send({ error: "Failed to fetch orders" });
+      }
+    });
+
+    console.log("🚀 All routes ready!");
   } catch (error) {
-    console.error("❌ Database connection failed:", error);
+    console.error("❌ MongoDB connection failed:", error);
   }
 }
 
 run().catch(console.dir);
 
-// ====== Server Start ======
 app.listen(port, () => {
-  console.log(`🚀 Pawmart server is running on port ${port}`);
+  console.log(`🚀 Pawmart server running on port ${port}`);
 });
