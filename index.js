@@ -24,7 +24,7 @@ let ordersCollection;
 
 async function connectDB() {
   try {
-    await client.connect();
+    // await client.connect();
     const db = client.db("pawmart");
     productsCollection = db.collection("products");
     ordersCollection = db.collection("orders");
@@ -36,7 +36,7 @@ async function connectDB() {
 connectDB();
 
 app.get("/", (req, res) => {
-  res.send("🐾 Pawmart server is running perfectly!");
+  res.send(" Pawmart server is running perfectly!");
 });
 
 app.post("/products", async (req, res) => {
@@ -91,7 +91,7 @@ app.get("/products/recent", async (req, res) => {
       .toArray();
     res.send(products);
   } catch (error) {
-    console.error("❌ Fetch recent products error:", error);
+    console.error("Fetch recent products error:", error);
     res.status(500).send({ error: "Failed to fetch recent products" });
   }
 });
